@@ -1,0 +1,3 @@
+D:\Pictures\College\College\Third Year\Graphics Programming\Graphics Programming Updated\Python
+
+C:\python27\python.exe lab10.py

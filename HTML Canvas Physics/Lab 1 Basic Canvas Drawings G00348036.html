@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+
+<html>
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Canvas</title>
+
+    <style type="text/css">
+
+    </style>
+
+  </head>
+
+  <body>
+
+    <canvas id="canvasOne" style="border:2px solid black;"></canvas>
+
+    <script type="text/javascript">
+		// Gets a handle to the element with id canvasOne.
+		var canvas = document.getElementById("canvasOne");
+    canvas.width = 800;
+    canvas.height = 600;
+
+		// Set the canvas up for drawing in 2D.
+		var ctx = canvas.getContext("2d");
+
+		//add name to canvas
+		ctx.font = "20px Arial";
+		ctx.fillText("Matthew Sloyan", 10, 40);
+
+		// Set the fill colour to bright red.
+		ctx.fillStyle = "rgb(224, 31, 31)";
+		// Create a filled rectangle at co-ordinates (10,60)
+		// with height and width set to 200.
+		ctx.fillRect(10, 60, 200, 100);
+
+		//add a second retangle with an opacity of .4
+		ctx.fillStyle = "rgba(31, 105, 224, .4)";
+		ctx.fillRect(75, 100, 200, 100);
+
+		//add a circle using an arc (light green)
+		ctx.beginPath();
+		ctx.arc(400, 130, 70, 0, Math.PI*2, true);
+		ctx.fillStyle = "rgb(137, 244, 66)";
+		ctx.fill();
+		ctx.stroke();
+
+		//add a second circle (darker green)
+		ctx.beginPath();
+		ctx.arc(570, 130, 70, 0, Math.PI*2, true);
+		ctx.fillStyle = "rgb(56, 160, 155)";
+		ctx.fill();
+		ctx.stroke();
+
+		//add square 1 (blue)
+		ctx.fillStyle = "rgb(31, 105, 224)";
+		ctx.fillRect(670, 80, 100, 100);
+
+		//add a circle that fits in square 1
+		ctx.moveTo(770, 130);
+		ctx.arc(720, 130, 50, 0, Math.PI*2, true);
+		ctx.fillStyle = "rgb(56, 160, 155)";
+		ctx.fill();
+		ctx.stroke();
+
+    //Pac Man
+		//add a circle using an arc that only draws 3/4 of the circle
+		ctx.beginPath();
+		ctx.arc(400, 300, 70, Math.PI*1.75, Math.PI*.25, true);
+
+		//draw a line from bottom of mouth (endpoint of arc above) to center of circle
+		ctx.lineTo(400, 300);
+
+		//calculate the value of x/y using cartesian form (Top of mouth)
+		var x = 70*Math.cos(Math.PI*.25);
+		var y = 70*Math.sin(Math.PI*1.75);
+
+		//draw line from center to top of mouth by adding the center
+		ctx.lineTo(x + 400, y + 300);
+		ctx.fillStyle = "rgb(252, 248, 40)";
+		ctx.fill();
+		ctx.stroke();
+
+    //animation
+		//add Square 2 which will be moved
+		ctx.beginPath();
+		ctx.fillStyle = "rgb(31, 105, 224)";
+		ctx.fillRect(520, 250, 100, 100);
+
+    //after three seconds call the moveRectangle function
+		setTimeout(moveRectangle, 3000);
+
+    //function to move Square 2
+		function moveRectangle() {
+      //clear just square 2
+			ctx.clearRect(520, 250, 100, 100);
+      //draw a new square in new position 50 px to the right
+			ctx.beginPath();
+			ctx.fillStyle = "rgb(31, 105, 224)";
+			ctx.fillRect(570, 250, 100, 100);
+		}
+
+    //Extras
+    // Create a gradient
+    var grd=ctx.createLinearGradient(0,0,200,0);
+    grd.addColorStop(0,"blue");
+    grd.addColorStop(1,"white");
+
+    // Fill the retangle with a gradient
+    ctx.fillStyle=grd;
+    ctx.fillRect(30,450,150,100);
+
+    //cubic bezier curve example
+    ctx.beginPath();
+    ctx.moveTo(250, 450);
+    ctx.bezierCurveTo(250, 550, 450, 550, 450, 450);
+    ctx.stroke();
+
+    //peace symbol
+    ctx.beginPath();
+		ctx.arc(600, 450, 50, 0, Math.PI*2, true);
+
+    ctx.moveTo(600, 450);
+    //goes around to point, and then remainder
+		var x = 50*Math.cos(Math.PI*1.75);
+		var y = 50*Math.sin(Math.PI*.25);
+		ctx.lineTo(x + 600, y + 450);
+
+    //ctx.moveTo(600, 450);
+    //ctx.lineTo(600, 500);
+
+    ctx.moveTo(600, 450);
+		x = 50*Math.cos(Math.PI*1.25);
+	  y = 50*Math.sin(Math.PI*.75);
+    ctx.lineTo(x + 600, y + 450);
+
+    //ctx.moveTo(600, 450);
+    //ctx.lineTo(600, 400);
+
+    ctx.moveTo(600, 450);
+    //goes around to point, and then remainder
+    var x = 50*Math.cos(Math.PI*.75);
+    var y = 50*Math.sin(Math.PI*1.25);
+    ctx.lineTo(x + 600, y + 450);
+
+    ctx.moveTo(600, 450);
+    //goes around to point, and then remainder
+    var x = 50*Math.cos(Math.PI*.25);
+    var y = 50*Math.sin(Math.PI*1.75);
+    ctx.lineTo(x + 600, y + 450);
+
+    ctx.lineWidth=4;
+    ctx.fillStyle = "rgb(252, 248, 40)";
+		ctx.fill();
+		ctx.stroke();
+
+
+    //draw the seven sections of the circle using cartesian
+    // for (var i = 0; i < 3; i++) {
+    //   //calculate the value of x/y
+    //   //multiply the equation by i to get a larger angle, e.g 2/7, 3/7 etc.
+    //   //add rotate to get the rotation effect, so each time the rotation is slightly larger.
+    //   x = 50 * Math.cos(i * (Math.PI*2)/8);
+    //   y = 50 * Math.sin(i * (Math.PI*2)/8);
+    //
+    //   //move the pen to the calculated x/y value and draw a line
+    //   ctx.moveTo(600, 450);
+    //   ctx.lineTo(x + 600, y + 450);
+    // }
+    //
+    // ctx.rotate(180*Math.PI/180);
+
+		//draw a line from bottom of mouth (endpoint of arc above) to center of circle
+		//ctx.lineTo(600, 450);
+
+		//calculate the value of x/y using cartesian form (Top of mouth)
+		//var x = 70*Math.cos(Math.PI*.25);
+		//var y = 70*Math.sin(Math.PI*1.75);
+
+		//draw line from center to top of mouth by adding the center
+		//ctx.lineTo(x + 400, y + 300);
+
+    </script>
+
+  </body>
+
+</html>

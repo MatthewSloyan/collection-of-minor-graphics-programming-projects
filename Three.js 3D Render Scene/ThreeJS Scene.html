@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title></title>
+		<style type="text/css">
+		</style>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/97/three.js"></script>
+		<script src="js/OrbitControls.js"></script>
+	</head>
+	<body>
+
+		<script>
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			//set up scene
+			var scene = new THREE.Scene();
+
+			//set up camera
+			var camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+			//set up 3D OrbitControls for user movement around object
+			var controls = new THREE.OrbitControls( camera );
+
+			camera.position.z = 20;
+			controls.update();
+
+			//set up shadow
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+			document.body.appendChild(renderer.domElement);
+
+			//ADDED axis helper to get x,y,z
+			var axesHelper = new THREE.AxesHelper( 5 );
+			axesHelper.position.x = -18;
+			scene.add(axesHelper);
+
+			//add a MeshLambertMaterial material, to be added to the sphere
+			var geometry = new THREE.SphereGeometry( 2, 32, 32 );
+			material = new THREE.MeshLambertMaterial({
+				color: 0xff0000,
+				wireframe: false
+			});
+
+			//add sphere to scene
+			var sphere = new THREE.Mesh( geometry, material );
+			sphere.castShadow = true;
+			scene.add( sphere );
+
+			// add wireframe over shape
+			var geo = new THREE.EdgesGeometry( sphere.geometry ); // or WireframeGeometry
+			var mat = new THREE.LineBasicMaterial( { color: 0x8c8c8c, linewidth: 0.5 } );
+			var wireframe = new THREE.LineSegments( geo, mat );
+			sphere.add( wireframe );
+
+			//add a plane to the scene and set it's position
+			var geometry = new THREE.PlaneGeometry( 20, 20, 32 );
+			var material = new THREE.MeshLambertMaterial( {color: 0xb2b2b2, side: THREE.DoubleSide} );
+			var plane = new THREE.Mesh( geometry, material );
+			plane.receiveShadow = true;
+			plane.rotateX( Math.PI / 2);
+			plane.position.y = -5.5;
+			scene.add( plane );
+
+			//Add directional light
+			var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+			directionalLight.position.set(0, 10, 0);
+			directionalLight.rotateX( Math.PI / 2);
+			directionalLight.castShadow = true;
+			scene.add(directionalLight);
+
+			//Create a helper for the shadow camera
+			scene.add( new THREE.CameraHelper( directionalLight.shadow.camera ) );
+
+			//Create a SpotLight and turn on shadows for the light
+			var light = new THREE.SpotLight( 0xffffff );
+			light.castShadow = true;            // default false
+			light.position.y = 10;
+			light.rotateX( Math.PI / 2);
+			scene.add( light );
+
+			//Create a helper for the shadow camera
+			scene.add( new THREE.CameraHelper( light.shadow.camera ) );
+
+			var red = 0;
+			var green = 0;
+			var blue = 0;
+
+			//call random colour function
+			randomColour();
+
+			function randomColour() {
+				//get inital random colour to start with and then increment from there below
+				red = Math.floor((Math.random() * 255) + 1);
+				green = Math.floor((Math.random() * 255) + 1);
+				blue = Math.floor((Math.random() * 255) + 1);
+			}
+
+			var velocity = 0.05; //set initial velocity
+
+			function repeatMe() {
+
+				//change colour slowly on every frame
+				changeColour();
+
+				requestAnimationFrame( repeatMe );
+				renderer.render( scene, camera );
+
+				//Code to rotate sphere
+				sphere.rotateX(Math.PI/180);
+				sphere.rotateY(Math.PI/180);
+
+        //Move sphere's y position
+        sphere.position.y += velocity;
+        // when x co-ordinate passes return
+        if(sphere.position.y >  4)
+					velocity = -0.05;
+        if(sphere.position.y < -4)
+					velocity =  0.05;
+
+				//update orbit controls
+				controls.update();
+			}
+			repeatMe();
+
+			//funtion to slowly change colour once exeeded the RGB limit of 255
+			function changeColour() {
+
+				var divRed, divGreen, divBlue;
+
+				//on each repeatMe() add one RGB value to colour to slowly increment it.
+		    red++;
+				green++;
+				blue++;
+
+				if (red > 255 || green > 255 || blue > 255) {
+					//if colour exceeds limit start with another random colour
+					randomColour();
+				}
+
+				//get the divisable to set colour.
+				divRed = red/255;
+				divGreen = green/255;
+				divBlue = blue/255;
+
+				sphere.material.color.setRGB(divRed, divGreen, divBlue);
+			}
+
+		</script>
+	</body>
+</html>

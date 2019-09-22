@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+
+<html>
+
+<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+  <head>
+    <meta charset="UTF-8">
+    <title>Ball Animation</title>
+
+    <style type="text/css">
+      body {
+          background-color: white;
+      }
+    </style>
+  </head>
+
+  <body>
+
+	<h1>Matthew Sloyan</h1>
+
+  <canvas id="canvas-for-ball" width="700" height="500" style="border:2px solid black;"></canvas>
+
+  <!-- User guide for extra functionality -->
+  <h4>Gravity Off = H &nbsp&nbsp&nbsp&nbsp Gravity On = G &nbsp&nbsp&nbsp&nbsp Add Two Balls = A</h4>
+  <h4>Increase Ball 1 Size = S  &nbsp&nbsp&nbsp&nbsp Decrease Ball 1 Size = D</h4>
+
+  <!-- display collision message when occurs -->
+	<h4 id="collisionMessage"></h4>
+
+  <script type="text/javascript">
+
+    //Matthew Sloyan - G00348036
+    //coded using ATOM
+    //please not sometimes the balls can spawn inside each other so a refresh is needed. I tried to implement truly unique
+    //ball placement but couldn't get it working.
+
+    //Ball 0 - User controlled
+    //Ball 1 - Gravity
+
+    // Gets a handle to the element with id canvasOne.
+    var canvas = document.getElementById("canvas-for-ball");
+    // Get a 2D context for the canvas.
+    var ctx = canvas.getContext("2d");
+    var gravityOnOff = true;
+
+	  //create a class Ball to allow multiple instances of the ball easily
+	  class Ball {
+
+  		//Ball Constructor
+  		constructor(xPos, yPos, xVol, yVol, r, rotate, rotationSpeed, rotationChecker, mass, colour) {
+  			this.xPos = xPos; //x position
+  			this.yPos = yPos; // y position
+  			this.xVol = xVol; // x Velocity
+  			this.yVol = yVol; // y velocity
+  			this.r = r; //radius
+  			this.rotate = rotate; // how much to rotate by
+  			this.rotationSpeed = rotationSpeed; //the speed of the rotation to increase
+  			this.rotationChecker = rotationChecker; //boolean for left/right rotation
+  			this.mass = mass;
+  			this.colour = colour; //takes in a string RGB value
+  		}
+
+  		//draw function which redraws all elements once called, the position is updated in the update function which simulates animation when redrawn
+  		draw(){
+  			var x, y;
+
+  			// Draw the ball
+  			ctx.beginPath();
+  			ctx.arc(this.xPos, this.yPos, this.r, this.rotate, 2 * Math.PI + this.rotate); //draw outer sphere
+  			ctx.arc(this.xPos, this.yPos, this.r - this.r/7, this.rotate, 2 * Math.PI + this.rotate); // draw smaller inner sphere
+
+  			ctx.fillStyle = "rgb(" + this.colour + ")"; //set the colour, colour is changed in the changeColour() function
+  			ctx.fill();
+
+        //draw the seven sections of the circle using cartesian
+  		  for (var i = 1; i < 8; i++) {
+    			//calculate the value of x/y
+          //multiply the equation by i to get a larger angle, e.g 2/7, 3/7 etc.
+          //add rotate to get the rotation effect, so each time the rotation is slightly larger.
+    			x = this.r*Math.cos(i * (Math.PI*2)/7 + this.rotate);
+    			y = this.r*Math.sin(i * (Math.PI*2)/7 + this.rotate);
+
+          //move the pen to the calculated x/y value and draw a line
+    			ctx.moveTo(this.xPos, this.yPos);
+    			ctx.lineTo(x + this.xPos, y + this.yPos);
+    	  }
+
+          //add the stroke and the rotation speed to be able to increase it with r or t.
+    			ctx.stroke();
+    			this.rotate += this.rotationSpeed;
+  		}
+
+  		//update the balls position to simulate animation,
+      //the x and y velocity is increased along with gravity and collision with the wall and other balls.
+  		update(){
+        // Update the x/y location using the velocity
+  			this.yPos += this.yVol;
+  			this.xPos += this.xVol;
+
+  			// If the ball hits the bottom/top of the canvas.
+  			if (this.yPos > canvas.height - this.r || this.yPos < this.r) {
+  				// Stop the ball and bounce it back, by multiplying the velocity by -1 it changes direction
+          // also set rotationChecker to true so it rotates the opposite direction
+  				this.yVol *= -1;
+  				this.rotationChecker = true;
+      	}
+    		//if the ball hits the sides it bounces back
+      	if (this.xPos > canvas.width - this.r || this.xPos < this.r) {
+    			this.xVol *= -1;
+  				this.rotationChecker = true;
+      	}
+
+        //if it has hit a wall rotationChecker will be true, so multiply by -1 to change the rotation, then set back to false
+        if (this.rotationChecker == true){
+          this.rotationSpeed *= -1;
+          this.rotationChecker = false;
+        }
+
+        // EXTRA - call the gravity function to apply gravity to all balls only if gravity is on
+        if (gravityOnOff == true) {
+          this.gravity();
+        }
+
+        //call the collision function to check if balls are colliding and react
+        this.collision();
+
+  		} //update function
+
+      //function to tidy up collision, checks if each ball is colling and reacts accordingly
+      collision(){
+        //variables for collision
+        var d, dx, dy, collision_angle;
+        var magnitude_1, magnitude_2, direction_1, direction_2;
+        var new_xVel_1, new_yVel_1, new_xVel_2, new_yVel_2;
+        var final_xVel_1, final_yVel_1, final_xVel_2, final_yVel_2;
+
+        //Collision nested for loop
+        //outer for goes through each ball
+        //inner loop checks if the ball on hand (i) is colliding with any other ball
+        //if they are colliding a reaction occurs
+        for (var i = 0; i < balls.length; i++) {
+           for (var j = i + 1; j < balls.length; j++) {
+
+             //collision detection to get the distance between the two balls at ever update
+             d = Math.sqrt( Math.pow((balls[j].xPos - balls[i].xPos), 2) + Math.pow((balls[j].yPos - balls[i].yPos), 2));
+
+             //if balls collide
+       		   if (d <= balls[i].r + balls[j].r ){
+
+         			 //Once collision is detected handle it
+               dx = balls[i].xPos - balls[j].xPos; //calculate horizontal distanc between balls
+               dy = balls[i].yPos - balls[j].yPos; // calculate vertical between balls
+         			 collision_angle = Math.atan2(dy, dx); // calculate the collision angle using trig
+
+         			 //calculate the ball speed, here called the magnitude
+               magnitude_1 = Math.sqrt(balls[i].xVol * balls[i].xVol + balls[i].yVol * balls[i].yVol);
+
+         			 //calculate the ball 2 speed
+               magnitude_2 = Math.sqrt(balls[j].xVol * balls[j].xVol + balls[j].yVol * balls[j].yVol);
+
+         			 //determine balls direction using trig
+         			 direction_1 = Math.atan2(balls[i].yVol, balls[i].xVol);
+         			 direction_2 = Math.atan2(balls[j].yVol, balls[j].xVol);
+
+         			 //calculate new x vol using trig applied to the difference between the direction angle and the collision angle
+         			 new_xVel_1 = magnitude_1 * Math.cos(direction_1 - collision_angle);
+         			 //same thing for the other vectors: ball 1 yvol and ball 2 xvol and yvol
+         			 new_yVel_1 = magnitude_1 * Math.sin(direction_1 - collision_angle);
+         			 new_xVel_2 = magnitude_2 * Math.cos(direction_2 - collision_angle);
+         			 new_yVel_2 = magnitude_2 * Math.sin(direction_2 - collision_angle);
+
+         			 //determine final x speed for ball 1
+               final_xVel_1 = ((balls[i].mass - balls[j].mass) * new_xVel_1 + (balls[j].mass + balls[j].mass) * new_xVel_2) / (balls[i].mass + balls[j].mass);
+         			 //determine final y speed for ball 2
+               final_xVel_2 = ((balls[i].mass + balls[i].mass) * new_xVel_1 + (balls[j].mass - balls[i].mass) * new_xVel_2) / (balls[i].mass + balls[j].mass);
+
+         			 //y speed does not change (it's a 1d collision)
+               final_yVel_1 = new_yVel_1;
+               final_yVel_2 = new_yVel_2;
+
+         			 //Determin x and y speeds on the original axis system using trig. Math.PI/2 is used because
+         			 //the angle between xVol and yVol must always be 90 degrees.
+               balls[i].xVol = Math.cos(collision_angle) * final_xVel_1 + Math.cos(collision_angle + Math.PI/2) * final_yVel_1;
+               balls[i].yVol = Math.sin(collision_angle) * final_xVel_1 + Math.sin(collision_angle + Math.PI/2) * final_yVel_1;
+               balls[j].xVol = Math.cos(collision_angle) * final_xVel_2 + Math.cos(collision_angle + Math.PI/2) * final_yVel_2;
+               balls[j].yVol = Math.sin(collision_angle) * final_xVel_2 + Math.sin(collision_angle + Math.PI/2) * final_yVel_2;
+
+               //display HTML message
+               document.getElementById("collisionMessage").innerHTML = "Collision Detected";
+
+               //after .6 seconds the message will disappear.
+               setTimeout(function(){
+                document.getElementById("collisionMessage").innerHTML="";
+               },600);
+
+               //change the colour when collision occurs (constructor variable)
+               this.colour = changeColour();
+
+              } //collision if
+            } // j for
+          } //i for
+       } //collision
+
+      //gravity function which applies gravity to all balls
+      gravity(){
+        // stop the ball from falling off the edge
+  		  if (balls[1].yPos < canvas.height - balls[1].r){
+          //if the ball is going down (minus velocity) then speed it up
+          // This simulates how a ball would fall
+  			  if (balls[1].yVol < 0){
+  				   	balls[1].yVol += .3;
+  			  }
+  			  else{
+             //if the ball is going up (plus velocity) then speed it up slightly less to get it to have a realistic bounce
+             // it has been tested to be about 90% of the original bounce height for realism
+  				   	balls[1].yVol += .24;
+  			  }
+  		  } //outer if
+      } //gravity
+  	} //ball class
+
+      //change the colour of the ball when colliding
+      function changeColour(){
+        var rgbValue_1, rgbValue_2, rgbValue_3, rbgString; //variables
+
+        //get a random RGB value between 1 and 256
+        rgbValue_1 = Math.floor((Math.random() * 256) + 1);
+        rgbValue_2 = Math.floor((Math.random() * 256) + 1);
+        rgbValue_3 = Math.floor((Math.random() * 256) + 1);
+
+        rgbString = rgbValue_1 + "," + rgbValue_2 + "," + rgbValue_3;
+        return rgbString;
+      }
+
+      //EXTRA - function which calculates a random xPos and returns it for constructor parameter
+      function randomXpos(){
+        var random_xPos;
+
+        //get a random x/y position in the canvas
+        random_xPos = Math.floor((Math.random() * canvas.width) + 1);
+
+        //depending on the side of the canvas the max radius must be added/taken away so the ball doesn't spawn in the wall.
+        if (random_xPos > canvas.width/2){
+          random_xPos -= maxRadius;
+        }
+        else {
+          random_xPos += maxRadius;
+        }
+
+        return random_xPos;
+      }
+
+      //EXTRA - function which calculates a random yPos and returns it for constructor parameter
+      function randomYpos(){
+        var random_yPos;
+
+        //get a random x/y position in the canvas
+        random_yPos = Math.floor((Math.random() * canvas.height) + 1);
+
+        //depending on the side of the canvas the max radius must be added/taken away so the ball doesn't spawn in the wall.
+        if (random_yPos > canvas.height/2){
+          random_yPos -= maxRadius;
+        }
+        else {
+          random_yPos += maxRadius;
+        }
+
+        return random_yPos;
+      }
+
+      //EXTRA - function which calculates a random plus or minus velocity and returns it for constructor parameter
+      function randomVelocity(){
+        var random_velocity = Math.floor(Math.random()*10) + 1; // this will get a number between 1 and 10;
+        random_velocity *= Math.floor(Math.random()*2) == 1 ? 1 : -1; // this will add minus sign in 50% of cases
+
+        return random_velocity;
+      }
+
+      //function resize ball 1 when either s or d is pressed, a true or false is passed in.
+      function resize(sizeIncrease){
+        //if size is true then s was pressed so increase radius by 3.
+        if (sizeIncrease == true) {
+          balls[0].r+=3;
+        }
+        else {
+          balls[0].r-=3;
+        }
+      }
+
+      // EXTRA - add ball function which adds two balls to the canvas
+      function addBall(){
+        var maxRadius = 40;
+
+        //for loop which adds two balls
+    		for (var i = 0; i < 2; i++) {
+          // EXTRA - get a random mass and radius so the balls have variety
+          random_mass = Math.floor((Math.random() * 70) + 1);
+          random_radius = Math.floor((Math.random() * maxRadius) + 12);
+
+          //add a new ball to the array using the constructor
+          //                  x position   Y position      returns a ran -/+ velocity        radius      rotate speed check    mass          colour
+          balls.push(new Ball(randomXpos(), randomYpos(), randomVelocity(), randomVelocity(), random_radius, 0.1, 0.02, false, random_mass, "244, 140, 66"));
+        }
+      }
+
+      //repeat the function to redraw the ball after each clear
+  		function repeatMe(){
+	      ctx.clearRect(0, 0, 700, 700);
+
+        //redraws and update each ball in the array
+  			for (var i = 0; i < balls.length; i++) {
+  				balls[i].draw();
+  				balls[i].update();
+  			}
+
+  			window.requestAnimationFrame(repeatMe);
+    	}
+
+  	  //keypresses with jQuery
+  		$(document.body).on('keydown', function(e) {
+  			console.log(e.which);
+
+  			switch (e.which) {
+  			// key code for left arrow
+  			case 37:
+  				balls[0].xVol--;
+  				break;
+  			// key code for up arrow
+  			case 38:
+  				balls[0].yVol--;
+  				break;
+  			// key code for right arrow
+  			case 39:
+  				balls[0].xVol++;
+  				break;
+  			// key code for down arrow
+  			case 40:
+  				balls[0].yVol++;
+  				break;
+  			// key code for r key, which increases rotation speed
+  			case 82:
+  				balls[0].rotationSpeed += 0.02;
+  				break;
+  			// key code for t key, which decreases rotation speed
+  			case 84:
+  				balls[0].rotationSpeed -= 0.02;
+  				break;
+        // EXTRA - key code for g key, which turns on gravity
+  			case 71:
+  				gravityOnOff = true;
+  				break;
+        // EXTRA - key code for h key, which turns off gravity
+        case 72:
+  				gravityOnOff = false;
+  				break;
+        // EXTRA - key code for s key, which increases ball size
+  			case 83:
+  			  resize(true);
+  				break;
+        // EXTRA - key code for d key, which decreases ball size
+        case 68:
+  				resize(false);
+  				break;
+        // EXTRA - key code for a key, which adds two ball
+        case 65:
+  				addBall();
+  				break;
+  			}
+  		});
+
+  		//move the balls position when clicking mouse at any point on the canvas
+  		canvas.addEventListener("click", function(event) {
+  			//change the x pos of the ball to the new position of the mouse click minus the offset.
+  			balls[0].xPos = event.clientX - canvas.offsetLeft;
+  			balls[0].yPos = event.clientY - canvas.offsetTop;
+  		});
+
+      //set up a balls array to easily add multiple balls
+  		var balls = [];
+      //for some reason it works best with an uneven amount of balls, e.g 3, 5, 7
+      var numberOfBalls = 3;
+      var maxRadius = 40;
+      var random_mass, random_radius;
+
+      //for loop which adds each ball to the array, add more by changing the numberOfBalls variable above
+  		for (var i = 0; i < numberOfBalls; i++) {
+
+        // EXTRA - get a random mass and radius so the balls have variety
+        random_mass = Math.floor((Math.random() * 70) + 1);
+        random_radius = Math.floor((Math.random() * maxRadius) + 12);
+
+  			//                  x position   Y position      returns a ran -/+ velocity        radius      rotate speed check    mass          colour
+        balls.push(new Ball(randomXpos(), randomYpos(), randomVelocity(), randomVelocity(), random_radius, 0.1, 0.02, false, random_mass, "244, 140, 66"));
+  		}
+
+      //call the repeatMe function to start the animation
+  		repeatMe();
+
+    </script>
+
+  </body>
+
+</html>

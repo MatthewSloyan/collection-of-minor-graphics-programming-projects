@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>D3JS Test</title>
+		<style type="text/css">
+
+			.zoom {
+			  cursor: move;
+			  fill: none;
+			  pointer-events: all;
+			}
+		</style>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.js"></script>
+		<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+	</head>
+	<body>
+		<script>
+			//jquery request to get JSON data
+			$.getJSON("https://jsonblob.com/api/60b035d5-d579-11e8-a295-3724bafc7173", function(data){
+
+				//log to console and call function to create graph
+				console.log(data);
+				plotCurrencyData(data);
+			});
+
+			// function to create graph using the returned JSON data
+			function plotCurrencyData(data) {
+
+				//FIRST GRAPH =============================
+				//==========================================
+
+				//set up SVG size and margins
+				var margin = {top: 50, right: 50, bottom: 50, left: 50},
+					width = 900 - margin.left - margin.right,
+					height = 670 - margin.top - margin.bottom;
+
+				//scales
+				var parseDate = d3.timeParse("%d/%m/%Y");
+
+				//parse the data for both the x and y axis
+				var x = d3.scaleTime()
+					.domain(d3.extent(data, function(d) {return parseDate (d["Date"]); }))
+					.range([0, width]);
+
+				var y = d3.scaleLinear()
+					.domain(d3.extent(data, function(d) { return d["GBP/EUR"]; }))
+					.range([height, 0]);
+
+				//Axes
+				//x is the d3.scaleTime()
+				var xAxis = d3.axisBottom(x)
+					.ticks(10);
+
+				//y is the d3.scaleLinear()
+				var yAxis = d3.axisLeft(y)
+					.ticks(15);
+
+				//create a line using the parsed data
+				var valueline = d3.line()
+					.x(function(d) { return x (parseDate (d["Date"])); })
+					.y(function(d) { return y (d["GBP/EUR"]); });
+
+				//set up the svg vector and scale
+				var svg = d3.select('body')
+					.append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+					.call(d3.zoom().on("zoom", function () {
+					    svg.attr("transform", d3.event.transform)
+					}))
+
+					.append("g")
+					//not necessary but adds an offset so that numeric values are visible
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+				//add x/y axis to svg element
+				svg.append('g') //append a <g> - group element
+					.attr("transform", "translate(0," + height + ")")
+					.attr('class', 'x axis')
+					.call(xAxis);
+
+				svg.append('g')
+					.attr('class', 'y axis') //specify classes
+					.call(yAxis);
+
+				svg.append("path") //add the valueline path
+					.style("stroke", "#ff002a")    // set the line colour to red
+					.style("fill", "none")
+					.attr("d", valueline(data));
+
+				// text label for the y axis
+				svg.append("text")
+					.attr("transform", "rotate(-90)")
+					.attr("y", 0 - margin.left)
+					.attr("x",0 - (height / 2))
+					.style("font-size", "15px")
+					.attr("dy", "1em")
+					.style("text-anchor", "middle")
+					.text("GBP/EUR");
+
+				// text label for the x axis
+				svg.append("text")
+					.attr("y", 600)
+					.attr("x",400)
+					.style("font-size", "15px")
+					.attr("dy", "1em")
+					.style("text-anchor", "middle")
+					.text("Date");
+
+				// text label for graph
+				svg.append("text")
+					.attr("y", -30)
+					.attr("x",40)
+					.attr("dy", "1em")
+					.style("font-size", "15px")
+					.style("text-anchor", "middle")
+					.text("GBP/EUR Data Graph");
+
+				//SECOND GRAPH ZOOM =============================
+				//==========================================
+
+				//doesn't work fully but I tried to implement it.
+				//margin for second scrollable graph
+				var margin2 = {top: -650, right: 50, bottom: 50, left: 50},
+					width2 = 900 - margin2.left - margin2.right,
+					height2 = 100 - margin2.top - margin2.bottom;
+
+				//scales
+				var parseDate2 = d3.timeParse("%d/%m/%Y");
+
+				//parse the data for both the x and y axis
+				var x2 = d3.scaleTime()
+					.domain(d3.extent(data, function(d) {return parseDate (d["Date"]); }))
+					.range([0, width]);
+
+				var y2 = d3.scaleLinear()
+					.domain(d3.extent(data, function(d) { return d["GBP/EUR"]; }))
+					.range([height, 0]);
+
+				//Axes
+				//x is the d3.scaleTime()
+				var xAxis2 = d3.axisBottom(x2)
+					.ticks(10);
+
+				//y is the d3.scaleLinear()
+				var yAxis2 = d3.axisLeft(y)
+					.ticks(5);
+
+				//add the brush
+				var brush = d3.brushX()
+			    .extent([[0, 0], [width, height2]])
+			    .on("brush end", brushed);
+
+				//add the zoom
+				var zoom = d3.zoom()
+			    .scaleExtent([1, Infinity])
+			    .translateExtent([[0, 0], [width, height]])
+			    .extent([[0, 0], [width, height]])
+			    .on("zoom", zoomed);
+
+				//add a line to the second graph
+				var valueline2 = d3.line()
+					.x(function(d) { return x (parseDate (d["Date"])); })
+					.y(function(d) { return y (d["GBP/EUR"]); });
+
+				//set up second svg vector for second graph
+				var svg2 = d3.select('body')
+					.append("svg")
+					.attr("width", width + margin2.left + margin2.right)
+					.attr("height", height2 + margin2.top + margin2.bottom)
+
+					.append("g")
+					//not necessary but adds an offset so that numeric values are visible
+					.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+				//add the second x axis
+				svg2.append('g') //appead a <g> - group element
+					.attr("transform", "translate(0," + height2 + ")")
+					.attr('class', 'x axis')
+					.call(xAxis2);
+
+				//add the second y axis
+				svg2.append('g')
+					.attr('class', 'y axis') //specify classes
+					.call(yAxis2);
+
+				svg2.append("path") //add the valueline path
+					.style("stroke", "#ff002a")    // set the line colour to red
+					.style("fill", "none")
+					.attr("d", valueline2(data));
+
+				//add a clip path
+				svg2.append("defs").append("clipPath")
+			    .attr("id", "clip")
+			  	.append("rect")
+			    .attr("width", width2)
+			    .attr("height", height2);
+
+				var focus = svg.append("g")
+				    .attr("class", "focus")
+				    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+				var context = svg.append("g")
+				    .attr("class", "context")
+				    .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+			} //plotCurrencyData
+
+			//allows the user to drag accross second graph
+			function brushed() {
+			  if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
+			  var s = d3.event.selection || x2.range();
+			  x.domain(s.map(x2.invert, x2));
+			  focus.select(".area").attr("d", area);
+			  focus.select(".axis--x").call(xAxis);
+			  svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
+			      .scale(width / (s[1] - s[0]))
+			      .translate(-s[0], 0));
+			}
+
+			//allows the user to zoom into first graph
+			function zoomed() {
+			  if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
+			  var t = d3.event.transform;
+			  x.domain(t.rescaleX(x2).domain());
+			  focus.select(".area").attr("d", area);
+			  focus.select(".axis--x").call(xAxis);
+			  context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
+			}
+		</script>
+	</body>
+</html>

@@ -1,0 +1,13 @@
+﻿<Properties StartupItem="Lab 6.csproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\CubeMovement.cs">
+    <Files>
+      <File FileName="Assets\Scripts\CubeMovement.cs" Line="31" Column="43" />
+      <File FileName="Assets\Scripts\CameraController.cs" Line="29" Column="3" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
